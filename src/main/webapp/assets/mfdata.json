@@ -1,0 +1,52 @@
+{
+  "instruments": [
+    [
+      "INF00XX01135",
+      "ITI MUTUAL FUND_MF",
+      "ITI Multi Cap Fund",
+      1000,
+      1,
+      1000,
+      0.001,
+      0.001,
+      "G",
+      "Growth",
+      "Equity",
+      "Multi Cap",
+      0,
+      "T2",
+      "2019-04-25",
+      "1",
+      "1% if redeemed or switched out on or before completion of 3 months from the date of allotment of units.Nil, if redeemed or switched out after completion of 3 months from the date of allotment of units.",
+      2.01,
+      0,
+      "Mr. Dhimant Shah",
+      0,
+      6
+    ],
+    [
+      "INF00XX01143",
+      "ITI MUTUAL FUND_MF",
+      "ITI Multi Cap Fund",
+      1000,
+      1,
+      1000,
+      0.001,
+      0.001,
+      "P",
+      "IDCW - Interim",
+      "Equity",
+      "Multi Cap",
+      0,
+      "T2",
+      "2019-04-25",
+      "1",
+      "1% if redeemed or switched out on or before completion of 3 months from the date of allotment of units.Nil, if redeemed or switched out after completion of 3 months from the date of allotment of units.",
+      2.01,
+      0,
+      "Mr. Dhimant Shah",
+      0,
+      6
+    ]
+]
+}
