@@ -16,7 +16,7 @@ public class User {
 	}
 
 	@Id
-	@Column(length=10)
+	@Column(length=100)
 	private String username;
 	
 	@Column(length=10)
@@ -59,4 +59,6 @@ public class User {
 	public void setEmail(String email) {
 		this.email = email;
 	}
+	
+	
 }
