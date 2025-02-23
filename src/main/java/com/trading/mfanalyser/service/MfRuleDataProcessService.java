@@ -40,11 +40,10 @@ import com.trading.mfanalyser.repo.MfRuleStockReportRepo;
 import jakarta.transaction.Transactional;
 
 @Service
-public class RuleUpdateService {
+public class MfRuleDataProcessService {
 
-	Logger logger = LoggerFactory.getLogger(RuleUpdateService.class);
-
-	ObjectMapper jsonMapper = new ObjectMapper();
+	Logger logger = LoggerFactory.getLogger(MfRuleDataProcessService.class);
+	
 	public static final String listTopFunds = "https://marketapi.intoday.in/widget/bestmutualfunds/view?duration=5y&broad_category_group=Equity&fund_level_category_name=Large-Cap&page=1";
 	public static final String listFundsHolding = "https://marketapi.intoday.in/widget/mfstockholding/pullview?isin=";
 
@@ -84,15 +83,21 @@ public class RuleUpdateService {
 	public void loadMfRuleData(Long ruleId) throws Exception {
 		logger.info("loadMfRuleData :" + ruleId);
 		LocalDate currDate = LocalDate.now();
+		int monthId = (currDate.getYear() * 100) + currDate.getMonthValue();
 		MfRule mfRule = mfRuleRepo.findById(ruleId).get();
-		long fundCount = mfRuleFundRepo.getCountOfFundForDate(ruleId, LocalDateTime.now().plusDays(3));
-		if (fundCount == 0) {
+		boolean isFundDataRefreshed = false;
+		long fundCountForCurrMonth = mfRuleFundRepo.getCountOfFundForMonth(ruleId, monthId);
+		/*
+		 * Fund data has to be re-loaded every Month
+		 * */
+		if (fundCountForCurrMonth == 0) {
+			isFundDataRefreshed = true;
 			mfRuleFundHoldingRepo.deleteByRuleId(mfRule.getRuleId());
 			mfRuleFundRepo.deleteByRuleId(mfRule.getRuleId());
 
-			JsonNode fundNode = getRestApiResponse(listTopFunds);
+			JsonNode fundNode = getRestApiResponse(mfRule.getDataApiUrl());
 			JsonNode fundArray = fundNode.get("data");
-			int monthId = (currDate.getYear() * 100) + currDate.getMonthValue();
+			
 			List<MfRuleFund> fundList = new ArrayList<MfRuleFund>();
 
 			for (JsonNode fundJson : fundArray) {
@@ -103,30 +108,43 @@ public class RuleUpdateService {
 				fund.setFundSubCategory(fundJson.get("fund_level_category_name").asText());
 				fund.setFundName(fundJson.get("legal_name").asText());
 				fund.setIsinCode(fundJson.get("isin").asText());
-				fund.setMfRuleFundHolding(getMfFundHoldings(fund, fund.getIsinCode()));
+				fund.setFundReturn1Yr(fundJson.get("dp_return_1Yr").asDouble());
+				fund.setFundReturn3Yr(fundJson.get("dp_return_3Yr").asDouble());
+				fund.setFundReturn5Yr(fundJson.get("dp_return_5Yr").asDouble());
 				fundList.add(fund);
 				if (fundList.size() >= MAX_FUND_COUNT) {
 					break;
 				}
 			}
 			mfRule.setMfRuleFund(fundList);
-			MfRule mfRuleS = mfRuleRepo.save(mfRule);
-			saveDataToHistoryTable(mfRuleS);
-			refreshStockReportData(mfRuleS);
-			System.out.println(mfRule);
 		}
+		/*
+		 * Holding data has to be re-loaded every day
+		 * */
+		mfRuleFundHoldingRepo.deleteByRuleId(mfRule.getRuleId());
+		for(MfRuleFund fund : mfRule.getMfRuleFund()) {
+			fund.setMfRuleFundHolding(getMfFundHoldings(fund, fund.getIsinCode()));				
+		}
+			
+		MfRule mfRuleS = mfRuleRepo.save(mfRule);
+		saveDataToHistoryTable(mfRuleS, isFundDataRefreshed);
+		refreshStockReportData(mfRuleS);
+		System.out.println(mfRule);
 	}
 
-	private void saveDataToHistoryTable(MfRule mfRule) {
+	private void saveDataToHistoryTable(MfRule mfRule, boolean isFundDataRefreshed) {
 		logger.info("saveDataToHistoryTable ");
 		List<MfRuleFundHistory> fundHistoryList = new ArrayList<MfRuleFundHistory>();
 		List<MfRuleFundHoldingHistory> fundHoldingHistoryList = new ArrayList<MfRuleFundHoldingHistory>();
 
 		mfRule.getMfRuleFund().forEach(fund -> {
-			MfRuleFundHistory fundH = new MfRuleFundHistory();
-			BeanUtils.copyProperties(fund, fundH);
-			fundH.setRuleId(mfRule.getRuleId());
-			fundHistoryList.add(fundH);
+			//Save Fund to history only if its refreshed...
+			if(!isFundDataRefreshed) {
+				MfRuleFundHistory fundH = new MfRuleFundHistory();
+				BeanUtils.copyProperties(fund, fundH);
+				fundH.setRuleId(mfRule.getRuleId());
+				fundHistoryList.add(fundH);
+			}
 			fund.getMfRuleFundHolding().forEach(holding -> {
 				MfRuleFundHoldingHistory holdingH = new MfRuleFundHoldingHistory();
 				BeanUtils.copyProperties(holding, holdingH);
@@ -173,7 +191,7 @@ public class RuleUpdateService {
 		logger.info("refreshStockReportData :" + mfRule.getRuleName());
 		long recCount = mfRuleStockReportRepo.getCountOfReportForDate(mfRule.getRuleId(), currDate);
 		if (recCount == 0) {
-			List<MfStockReportEntity> reportList = mfRuleStockReportRepo.findByRuleId(mfRule.getRuleId());
+			List<MfStockReportEntity> reportList = mfRuleStockReportRepo.findByRuleIdOrderByDay1Desc(mfRule.getRuleId());
 			Map<String, MfStockReportEntity> reportMap = reportList.stream()
 					.collect(Collectors.toMap(MfStockReportEntity::getIsinCode, Function.identity()));
 
@@ -237,7 +255,7 @@ public class RuleUpdateService {
 		WebClient client = WebClient.builder().baseUrl(url).defaultCookie("cookieKey", "cookieValue")
 				.defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).build();
 		String jsonStr = client.get().retrieve().bodyToMono(String.class).block();
-		JsonNode fundNode = jsonMapper.readTree(jsonStr);
+		JsonNode fundNode = mapper.readTree(jsonStr);
 
 		return fundNode;
 

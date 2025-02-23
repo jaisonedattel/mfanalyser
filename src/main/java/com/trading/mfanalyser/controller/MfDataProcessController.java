@@ -8,14 +8,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.trading.mfanalyser.service.RuleUpdateService;
+import com.trading.mfanalyser.service.MfRuleDataProcessService;
 
 @RestController
 @RequestMapping
-public class MfController {
+public class MfDataProcessController {
 	
 	@Autowired
-	RuleUpdateService ruleUpdaetService;
+	MfRuleDataProcessService ruleUpdaetService;
 	
 	@RequestMapping(value = "/loadMfRuleData/{ruleId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public String loadMfRuleData(@PathVariable("ruleId") long ruleId) throws Exception {

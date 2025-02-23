@@ -37,7 +37,10 @@ public class MfRule {
 
 	@Column(name = "RULE_TYPE", length=100)
 	private String ruleType; //equity large cap
-	
+
+	@Column(name = "DATA_API_URL", length=250)
+	private String dataApiUrl;
+
 	@Column(name = "IS_ACTIVE", columnDefinition = "varchar(10) default 'Y'" )
 	private String isActive;
 	
@@ -91,6 +94,22 @@ public class MfRule {
 
 	public void setCreatedDate(LocalDate createdDate) {
 		this.createdDate = createdDate;
+	}
+
+	public String getDataApiUrl() {
+		return dataApiUrl;
+	}
+
+	public void setDataApiUrl(String dataApiUrl) {
+		this.dataApiUrl = dataApiUrl;
+	}
+
+	public String getIsActive() {
+		return isActive;
+	}
+
+	public void setIsActive(String isActive) {
+		this.isActive = isActive;
 	}
 
 	@Override

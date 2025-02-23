@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import com.trading.mfanalyser.dto.MfRuleInfo;
+import com.trading.mfanalyser.dto.MfRuleFundInfo;
 import com.trading.mfanalyser.entity.MfRuleFund;
 
 public interface MfRuleFundRepo  extends CrudRepository<MfRuleFund,Long> {
@@ -39,4 +41,7 @@ public interface MfRuleFundRepo  extends CrudRepository<MfRuleFund,Long> {
 	@Query("select count(u) from MfRuleFund u WHERE u.mfRule.id = ?1 and cast(u.createdDate as LocalDate)= cast(?2 as LocalDate)")
 	long getCountOfFundForDate(long ruleId, LocalDateTime date);
 
+	@Query("select count(u) from MfRuleFund u WHERE u.mfRule.id = ?1 and u.monthId = ?2")
+	long getCountOfFundForMonth(long ruleId, int monthId);
+	
 }

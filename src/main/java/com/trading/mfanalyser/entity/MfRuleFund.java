@@ -46,6 +46,15 @@ public class MfRuleFund {
 	@Column(name = "FUND_SUB_CATEGORY", length=100)
 	private String fundSubCategory; //equity , debt
 	
+	@Column(name="FUND_RETURN_1YR")
+	private double fundReturn1Yr;
+	
+	@Column(name="FUND_RETURN_3YR")
+	private double fundReturn3Yr;
+	
+	@Column(name="FUND_RETURN_5YR")
+	private double fundReturn5Yr;
+	
 	@Column(name = "MONTH_ID")
 	private int monthId; //202501
 	
@@ -107,6 +116,30 @@ public class MfRuleFund {
 
 	public void setFundSubCategory(String fundSubCategory) {
 		this.fundSubCategory = fundSubCategory;
+	}
+
+	public double getFundReturn1Yr() {
+		return fundReturn1Yr;
+	}
+
+	public void setFundReturn1Yr(double fundReturn1Yr) {
+		this.fundReturn1Yr = fundReturn1Yr;
+	}
+
+	public double getFundReturn3Yr() {
+		return fundReturn3Yr;
+	}
+
+	public void setFundReturn3Yr(double fundReturn3Yr) {
+		this.fundReturn3Yr = fundReturn3Yr;
+	}
+
+	public double getFundReturn5Yr() {
+		return fundReturn5Yr;
+	}
+
+	public void setFundReturn5Yr(double fundReturn5Yr) {
+		this.fundReturn5Yr = fundReturn5Yr;
 	}
 
 	public int getMonthId() {
