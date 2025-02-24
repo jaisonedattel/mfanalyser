@@ -13,9 +13,11 @@ import com.trading.mfanalyser.dto.MfRuleDto;
 import com.trading.mfanalyser.dto.MfRuleFundDto;
 import com.trading.mfanalyser.dto.MfRuleInfo;
 import com.trading.mfanalyser.dto.MfStockReportDto;
+import com.trading.mfanalyser.dto.StockFundNameInfo;
 import com.trading.mfanalyser.entity.MfRule;
 import com.trading.mfanalyser.entity.MfRuleFund;
 import com.trading.mfanalyser.entity.MfStockReportEntity;
+import com.trading.mfanalyser.repo.MfRuleFundHoldingRepo;
 import com.trading.mfanalyser.repo.MfRuleFundRepo;
 import com.trading.mfanalyser.repo.MfRuleRepo;
 import com.trading.mfanalyser.repo.MfRuleStockReportRepo;
@@ -33,6 +35,9 @@ public class MfRuleService {
 	@Autowired
 	MfRuleFundRepo mfRuleFundRepo;
 
+	@Autowired
+	MfRuleFundHoldingRepo mfRuleFundHoldingRepo;
+	
 	@Autowired
 	MfRuleStockReportRepo reportRepo;
 	
@@ -82,6 +87,9 @@ public class MfRuleService {
 			reportDtoList.add(dto);
 		});
 		return reportDtoList;
+	}
+	public List<StockFundNameInfo> listMfStockFunds(long ruleId, String stockName) {
+		return mfRuleFundHoldingRepo.getStockHoldingFundNames(ruleId, stockName);
 	}
 
 }

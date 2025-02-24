@@ -74,7 +74,7 @@ $(function() {
 							<td><span class="${trendColor}">
                   				<i class="${trendArrow}"></i><span>${v[2]} %</span>
                 			</span></td>
-							<td><p class="fw-normal mb-1"> ${v[1]} </p></td>
+							<td><p class="fw-normal mb-1"> ${v[4]} </p></td>
 					</tr>`;
 		});
 		$("#stockTrendHistTable tbody").html(stockHist);
@@ -82,16 +82,31 @@ $(function() {
 		$('#myTrendTableModal').modal('show');
 
 	});
-	loadTrendDataTable(14952);
+	$('#equitySmallCapCard').on('click', 'div', function() {
+		$('.fundTypeCard').css("border-style","")
+		loadTrendDataTable(4952, '#equitySmallCapCard');
+	});
+	$('#equityMidCapCard').on('click', 'div', function() {
+		$('.fundTypeCard').css("border-style","")
+		loadTrendDataTable(9952, '#equityMidCapCard');	
+	});
+	$('#equityLargeCapCard').on('click', 'div', function() {
+		$('.fundTypeCard').css("border-style","")
+		loadTrendDataTable(14952, '#equityLargeCapCard');	
+	});
+	loadTrendDataTable(4952,'#equityLargeCapCard');	
 });
 var stockTrendData = {};
-function loadTrendDataTable(ruleId) {
+function loadTrendDataTable(ruleId, fundTypeCardId) {
+	
+	$(fundTypeCardId).css("border-style","solid")
 	$.ajax({
 		url: "/listMfStockTrendRecords/" + ruleId, success: function(data) {
 			let stockList = ``;
 			if (data.length == 0) {
 				stockList = `<tr><td colspan=5><div style="font-size:16px">No Data</div></td></tr>`;
 			} else {
+				$("#stockTrendTable tbody").html("");
 				data.forEach(function(v, i) {
 					stockTrendData[v.reportId] = v.holdingTrend;
 
@@ -138,7 +153,7 @@ function loadTrendDataTable(ruleId) {
 							</td>
 							</tr>`;
 				});
-				$("#stockTrendTable tbody").append(stockList);
+				$("#stockTrendTable tbody").html(stockList);
 			}
 		}
 	});

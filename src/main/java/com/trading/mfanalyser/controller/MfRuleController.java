@@ -9,10 +9,12 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.trading.mfanalyser.dto.MfRuleDto;
 import com.trading.mfanalyser.dto.MfStockReportDto;
+import com.trading.mfanalyser.dto.StockFundNameInfo;
 import com.trading.mfanalyser.service.MfRuleService;
 
 @RestController
@@ -33,4 +35,8 @@ public class MfRuleController {
 		return mfRuleService.listMfStockTrendRecords(ruleId);
 	}
 	
+	@RequestMapping(value = "/listMfStockFunds", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<StockFundNameInfo> listMfStockFunds(@RequestParam("ruleId") long ruleId, @RequestParam("stockName") String stockName) throws Exception {
+		return mfRuleService.listMfStockFunds(ruleId, stockName);
+	}
 }

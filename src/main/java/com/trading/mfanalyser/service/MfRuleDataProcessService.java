@@ -91,6 +91,8 @@ public class MfRuleDataProcessService {
 		 * Fund data has to be re-loaded every Month
 		 * */
 		if (fundCountForCurrMonth == 0) {
+			logger.info("loadMfRuleData : Refreshing MF list data" + ruleId);
+
 			isFundDataRefreshed = true;
 			mfRuleFundHoldingRepo.deleteByRuleId(mfRule.getRuleId());
 			mfRuleFundRepo.deleteByRuleId(mfRule.getRuleId());
@@ -122,6 +124,7 @@ public class MfRuleDataProcessService {
 		 * Holding data has to be re-loaded every day
 		 * */
 		mfRuleFundHoldingRepo.deleteByRuleId(mfRule.getRuleId());
+		logger.info("loadMfRuleData : Refreshing MF Holding list data" + ruleId);
 		for(MfRuleFund fund : mfRule.getMfRuleFund()) {
 			fund.setMfRuleFundHolding(getMfFundHoldings(fund, fund.getIsinCode()));				
 		}
@@ -129,7 +132,7 @@ public class MfRuleDataProcessService {
 		MfRule mfRuleS = mfRuleRepo.save(mfRule);
 		saveDataToHistoryTable(mfRuleS, isFundDataRefreshed);
 		refreshStockReportData(mfRuleS);
-		System.out.println(mfRule);
+		logger.info("loadMfRuleData : Rule Data refresh completed : " + ruleId);
 	}
 
 	private void saveDataToHistoryTable(MfRule mfRule, boolean isFundDataRefreshed) {
@@ -188,7 +191,7 @@ public class MfRuleDataProcessService {
 	private void refreshStockReportData(MfRule mfRule) {
 		LocalDate currDate = LocalDate.now(ZoneId.of("GMT+05:30"));
 		String currDateStr = currDate.toString();
-		logger.info("refreshStockReportData :" + mfRule.getRuleName());
+		logger.info("Refresh Stock Report Data : " + mfRule.getRuleName());
 		long recCount = mfRuleStockReportRepo.getCountOfReportForDate(mfRule.getRuleId(), currDate);
 		if (recCount == 0) {
 			List<MfStockReportEntity> reportList = mfRuleStockReportRepo.findByRuleIdOrderByDay1Desc(mfRule.getRuleId());
