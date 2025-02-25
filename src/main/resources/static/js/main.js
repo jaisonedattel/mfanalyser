@@ -94,7 +94,7 @@ $(function() {
 		$('.fundTypeCard').css("border-style","")
 		loadTrendDataTable(14952, '#equityLargeCapCard');	
 	});
-	loadTrendDataTable(4952,'#equityLargeCapCard');	
+	loadTrendDataTable(14952,'#equityLargeCapCard');	
 });
 var stockTrendData = {};
 function loadTrendDataTable(ruleId, fundTypeCardId) {
@@ -126,31 +126,6 @@ function loadTrendDataTable(ruleId, fundTypeCardId) {
                   				<i class="${trendArrow}"></i><span>${v.day1} %</span>
                 			</span></td>
 							<td><p class="fw-normal mb-1"> ${latestData[1]} </p></td>
-							<td>
-							<div id="line-example-1">
-									<table class="charts-css line hide-data">
-										<caption> Line Example #1 </caption>
-										<tbody>
-											<tr>
-												<td style="--start: 0.3; --end: 0.6;"><span class="data"> $ 40K </span>
-												</td>
-											</tr>
-											<tr>
-												<td style="--start: 0.6; --end: 0.5;"><span class="data"> $ 20K </span>
-												</td>
-											</tr>
-											<tr>
-												<td style="--start: 0.5; --end: 0.7;"><span class="data"> $ 60K </span>
-												</td>
-											</tr>
-											<tr>
-												<td style="--start: 0.7; --end: 0.9;"><span class="data"> $ 40K </span>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-							</td>
 							</tr>`;
 				});
 				$("#stockTrendTable tbody").html(stockList);
