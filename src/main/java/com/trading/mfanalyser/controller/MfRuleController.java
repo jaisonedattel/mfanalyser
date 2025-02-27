@@ -30,9 +30,9 @@ public class MfRuleController {
 		return mfRuleService.listMfRuleRecords();
 	}
 	
-	@RequestMapping(value = "/listMfStockTrendRecords/{ruleId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-	public List<MfStockReportDto> listMfStockTrendRecords(@PathVariable("ruleId") long ruleId) throws Exception {
-		return mfRuleService.listMfStockTrendRecords(ruleId);
+	@RequestMapping(value = "/listMfStockTrendRecords/{ruleType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<MfStockReportDto> listMfStockTrendRecords(@PathVariable("ruleType") String ruleType) throws Exception {
+		return mfRuleService.listMfStockTrendRecords(ruleType);
 	}
 	
 	@RequestMapping(value = "/listMfStockFunds", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

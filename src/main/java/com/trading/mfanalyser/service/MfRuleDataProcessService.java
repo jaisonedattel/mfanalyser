@@ -43,13 +43,13 @@ import jakarta.transaction.Transactional;
 public class MfRuleDataProcessService {
 
 	Logger logger = LoggerFactory.getLogger(MfRuleDataProcessService.class);
-	
+
 	public static final String listTopFunds = "https://marketapi.intoday.in/widget/bestmutualfunds/view?duration=5y&broad_category_group=Equity&fund_level_category_name=Large-Cap&page=1";
 	public static final String listFundsHolding = "https://marketapi.intoday.in/widget/mfstockholding/pullview?isin=";
 
 	public static final int MAX_FUND_COUNT = 10;
 	public static final int MAX_HOLDINGS_COUNT = 50;
-	
+
 	@Autowired
 	MfRuleRepo mfRuleRepo;
 
@@ -80,18 +80,17 @@ public class MfRuleDataProcessService {
 	}
 
 	@Transactional
-	public void loadMfRuleData(Long ruleId) throws Exception {
-		logger.info("loadMfRuleData :" + ruleId);
+	public void loadMfRuleData(MfRule mfRule) throws Exception {
+		logger.info("loadMfRuleData :" + mfRule.getRuleType());
 		LocalDate currDate = LocalDate.now();
 		int monthId = (currDate.getYear() * 100) + currDate.getMonthValue();
-		MfRule mfRule = mfRuleRepo.findById(ruleId).get();
 		boolean isFundDataRefreshed = false;
-		long fundCountForCurrMonth = mfRuleFundRepo.getCountOfFundForMonth(ruleId, monthId);
+		long fundCountForCurrMonth = mfRuleFundRepo.getCountOfFundForMonth(mfRule.getRuleId(), monthId);
 		/*
 		 * Fund data has to be re-loaded every Month
-		 * */
+		 */
 		if (fundCountForCurrMonth == 0) {
-			logger.info("loadMfRuleData : Refreshing MF list data" + ruleId);
+			logger.info("loadMfRuleData : Refreshing MF list data" + mfRule.getRuleType());
 
 			isFundDataRefreshed = true;
 			mfRuleFundHoldingRepo.deleteByRuleId(mfRule.getRuleId());
@@ -99,7 +98,7 @@ public class MfRuleDataProcessService {
 
 			JsonNode fundNode = getRestApiResponse(mfRule.getDataApiUrl());
 			JsonNode fundArray = fundNode.get("data");
-			
+
 			List<MfRuleFund> fundList = new ArrayList<MfRuleFund>();
 
 			for (JsonNode fundJson : fundArray) {
@@ -122,17 +121,17 @@ public class MfRuleDataProcessService {
 		}
 		/*
 		 * Holding data has to be re-loaded every day
-		 * */
+		 */
 		mfRuleFundHoldingRepo.deleteByRuleId(mfRule.getRuleId());
-		logger.info("loadMfRuleData : Refreshing MF Holding list data" + ruleId);
-		for(MfRuleFund fund : mfRule.getMfRuleFund()) {
-			fund.setMfRuleFundHolding(getMfFundHoldings(fund, fund.getIsinCode()));				
+		logger.info("loadMfRuleData : Refreshing MF Holding list data :" + mfRule.getRuleType());
+		for (MfRuleFund fund : mfRule.getMfRuleFund()) {
+			fund.setMfRuleFundHolding(getMfFundHoldings(fund, fund.getIsinCode()));
 		}
-			
+
 		MfRule mfRuleS = mfRuleRepo.save(mfRule);
 		saveDataToHistoryTable(mfRuleS, isFundDataRefreshed);
 		refreshStockReportData(mfRuleS);
-		logger.info("loadMfRuleData : Rule Data refresh completed : " + ruleId);
+		logger.info("loadMfRuleData : Rule Data refresh completed : " + mfRule.getRuleType());
 	}
 
 	private void saveDataToHistoryTable(MfRule mfRule, boolean isFundDataRefreshed) {
@@ -141,8 +140,8 @@ public class MfRuleDataProcessService {
 		List<MfRuleFundHoldingHistory> fundHoldingHistoryList = new ArrayList<MfRuleFundHoldingHistory>();
 
 		mfRule.getMfRuleFund().forEach(fund -> {
-			//Save Fund to history only if its refreshed...
-			if(!isFundDataRefreshed) {
+			// Save Fund to history only if its refreshed...
+			if (!isFundDataRefreshed) {
 				MfRuleFundHistory fundH = new MfRuleFundHistory();
 				BeanUtils.copyProperties(fund, fundH);
 				fundH.setRuleId(mfRule.getRuleId());
@@ -192,9 +191,10 @@ public class MfRuleDataProcessService {
 		LocalDate currDate = LocalDate.now(ZoneId.of("GMT+05:30"));
 		String currDateStr = currDate.toString();
 		logger.info("Refresh Stock Report Data : " + mfRule.getRuleName());
-		long recCount = mfRuleStockReportRepo.getCountOfReportForDate(mfRule.getRuleId(), currDate);
+		long recCount = mfRuleStockReportRepo.getCountOfReportForDate(mfRule.getRuleType(), currDate);
 		if (recCount == 0) {
-			List<MfStockReportEntity> reportList = mfRuleStockReportRepo.findByRuleIdOrderByDay1Desc(mfRule.getRuleId());
+			List<MfStockReportEntity> reportList = mfRuleStockReportRepo
+					.findByRuleTypeOrderByDay1Desc(mfRule.getRuleType());
 			Map<String, MfStockReportEntity> reportMap = reportList.stream()
 					.collect(Collectors.toMap(MfStockReportEntity::getIsinCode, Function.identity()));
 
@@ -209,6 +209,7 @@ public class MfRuleDataProcessService {
 					MfStockReportEntity reportEntity = reportMap.get(isinCodeKey);
 					if (reportEntity == null) {
 						reportEntity = new MfStockReportEntity(fundHoldingList.get(0));
+						reportEntity.setRuleType(mfRule.getRuleType());
 						//
 						reportEntity.setHoldingTrend(mapper.createArrayNode());
 						reportMap.put(isinCodeKey, reportEntity);
@@ -217,7 +218,7 @@ public class MfRuleDataProcessService {
 					/**
 					 * 
 					 */
-					reportEntity.setLastRunDate(currDate); //crucial
+					reportEntity.setLastRunDate(currDate); // crucial
 				}
 
 			});
@@ -262,5 +263,21 @@ public class MfRuleDataProcessService {
 
 		return fundNode;
 
+	}
+
+	@Transactional
+	public String refreshRuleData() {
+		logger.info("refreshRuleData");
+		List<MfRule> mfRuleList = mfRuleRepo.findByIsActive(MfRuleService.ACTIVE);
+		mfRuleList.forEach(mfRule -> {
+			try {
+				loadMfRuleData(mfRule);
+			} catch (Exception e) {
+				logger.error("Error in data refresh : ",e);
+			}
+		});
+		
+
+		return "Success";
 	}
 }

@@ -84,24 +84,24 @@ $(function() {
 	});
 	$('#equitySmallCapCard').on('click', 'div', function() {
 		$('.fundTypeCard').css("border-style","")
-		loadTrendDataTable(4952, '#equitySmallCapCard');
+		loadTrendDataTable('EQUITY_SMALL_CAP', '#equitySmallCapCard');
 	});
 	$('#equityMidCapCard').on('click', 'div', function() {
 		$('.fundTypeCard').css("border-style","")
-		loadTrendDataTable(9952, '#equityMidCapCard');	
+		loadTrendDataTable('EQUITY_MID_CAP', '#equityMidCapCard');	
 	});
 	$('#equityLargeCapCard').on('click', 'div', function() {
 		$('.fundTypeCard').css("border-style","")
-		loadTrendDataTable(14952, '#equityLargeCapCard');	
+		loadTrendDataTable('EQUITY_LARGE_CAP', '#equityLargeCapCard');	
 	});
-	loadTrendDataTable(14952,'#equityLargeCapCard');	
+	loadTrendDataTable('EQUITY_LARGE_CAP','#equityLargeCapCard');	
 });
 var stockTrendData = {};
-function loadTrendDataTable(ruleId, fundTypeCardId) {
+function loadTrendDataTable(ruleType, fundTypeCardId) {
 	
 	$(fundTypeCardId).css("border-style","solid")
 	$.ajax({
-		url: "/listMfStockTrendRecords/" + ruleId, success: function(data) {
+		url: "/listMfStockTrendRecords/" + ruleType, success: function(data) {
 			let stockList = ``;
 			if (data.length == 0) {
 				stockList = `<tr><td colspan=5><div style="font-size:16px">No Data</div></td></tr>`;

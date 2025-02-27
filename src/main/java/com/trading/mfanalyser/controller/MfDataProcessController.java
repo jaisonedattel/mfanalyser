@@ -16,12 +16,12 @@ public class MfDataProcessController {
 	
 	@Autowired
 	MfRuleDataProcessService ruleUpdaetService;
-	
-	@RequestMapping(value = "/loadMfRuleData/{ruleId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-	public String loadMfRuleData(@PathVariable("ruleId") long ruleId) throws Exception {
-		ruleUpdaetService.loadMfRuleData(ruleId);
-		return "hello";
+		
+	@RequestMapping(value = "/refreshRuleData", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public String refreshRuleData() throws Exception {
+		return ruleUpdaetService.refreshRuleData();
 	}
+
 	
 	@RequestMapping(value = "/refreshStockReport/{ruleId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public String refreshStockReport(@PathVariable("ruleId") long ruleId) throws Exception {

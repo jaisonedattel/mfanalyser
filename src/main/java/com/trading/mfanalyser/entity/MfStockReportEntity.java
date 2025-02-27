@@ -31,8 +31,8 @@ public class MfStockReportEntity {
 	@Column(name = "REPORT_ID")
 	private long reportId;
 
-	@Column(name = "RULE_ID")
-	private long ruleId;
+	@Column(name = "RULE_TYPE")
+	private String ruleType;
 
 	@Column(name = "STOCK_NAME")
 	private String stockName;
@@ -99,14 +99,6 @@ public class MfStockReportEntity {
 
 	public void setReportId(long reportId) {
 		this.reportId = reportId;
-	}
-
-	public long getRuleId() {
-		return ruleId;
-	}
-
-	public void setRuleId(long ruleId) {
-		this.ruleId = ruleId;
 	}
 
 	public String getStockName() {
@@ -227,6 +219,14 @@ public class MfStockReportEntity {
 
 	public void setLastRunDate(LocalDate lastRunDate) {
 		this.lastRunDate = lastRunDate;
+	}
+
+	public String getRuleType() {
+		return ruleType;
+	}
+
+	public void setRuleType(String ruleType) {
+		this.ruleType = ruleType;
 	}
 
 	public static void main(String arg[]) throws JsonMappingException, JsonProcessingException {

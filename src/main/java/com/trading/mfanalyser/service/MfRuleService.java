@@ -78,8 +78,8 @@ public class MfRuleService {
 		return retList;
 
 	}
-	public List<MfStockReportDto> listMfStockTrendRecords(long ruleId) {
-		List<MfStockReportEntity> reportEntityList = reportRepo.findByRuleIdOrderByDay1Desc(ruleId);
+	public List<MfStockReportDto> listMfStockTrendRecords(String ruleType) {
+		List<MfStockReportEntity> reportEntityList = reportRepo.findByRuleTypeOrderByDay1Desc(ruleType);
 		List<MfStockReportDto> reportDtoList = new ArrayList<MfStockReportDto>();
 		reportEntityList.forEach(entity -> {
 			MfStockReportDto dto = new MfStockReportDto();
