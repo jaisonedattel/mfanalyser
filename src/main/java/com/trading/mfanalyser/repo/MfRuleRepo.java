@@ -11,6 +11,8 @@ import com.trading.mfanalyser.entity.MfRule;
 public interface MfRuleRepo extends CrudRepository<MfRule, Long> {
 
 	List<MfRule> findByIsActive(String isActive);
+	
+	MfRule findByRuleType(String ruleType);
 
 	@Query("SELECT c.ruleId as ruleId,c.ruleName as ruleName,c.description as description,c.ruleType as ruleType,c.isActive as isActive,"
 			+ "c.mfRuleFund as mfRuleFund FROM MfRule c WHERE c.isActive = ?1")

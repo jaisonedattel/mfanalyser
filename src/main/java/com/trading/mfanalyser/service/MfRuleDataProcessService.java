@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -29,6 +31,7 @@ import com.trading.mfanalyser.entity.MfRuleFund;
 import com.trading.mfanalyser.entity.MfRuleFundHistory;
 import com.trading.mfanalyser.entity.MfRuleFundHolding;
 import com.trading.mfanalyser.entity.MfRuleFundHoldingHistory;
+import com.trading.mfanalyser.entity.MfStockReportDocument;
 import com.trading.mfanalyser.entity.MfStockReportEntity;
 import com.trading.mfanalyser.repo.MfRuleFundHistoryRepo;
 import com.trading.mfanalyser.repo.MfRuleFundHoldingHistoryRepo;
@@ -36,6 +39,7 @@ import com.trading.mfanalyser.repo.MfRuleFundHoldingRepo;
 import com.trading.mfanalyser.repo.MfRuleFundRepo;
 import com.trading.mfanalyser.repo.MfRuleRepo;
 import com.trading.mfanalyser.repo.MfRuleStockReportRepo;
+import com.trading.mfanalyser.repo.StockReportMongoRepo;
 
 import jakarta.transaction.Transactional;
 
@@ -70,7 +74,9 @@ public class MfRuleDataProcessService {
 
 	@Autowired
 	MfRuleStockReportRepo mfRuleStockReportRepo;
-
+	
+	@Autowired
+	StockReportMongoRepo stockReportMongoRepo;
 	public void createMfRule() {
 		MfRule mfRule = new MfRule();
 		mfRule.setDescription("Top Large Cap fund in 5yr -- III");
@@ -223,7 +229,23 @@ public class MfRuleDataProcessService {
 
 			});
 			mfRuleStockReportRepo.saveAll(reportMap.values());
+			backUpDataToMongoDb(mfRule.getRuleType(), reportMap);
 		}
+	}
+
+	private void backUpDataToMongoDb(String ruleType, Map<String, MfStockReportEntity> reportMap) {
+		
+		List<MfStockReportDocument> rptDocs = new ArrayList<MfStockReportDocument>();
+		reportMap.values().forEach(rptEntity ->{
+			MfStockReportDocument doc = new MfStockReportDocument();
+			BeanUtils.copyProperties(rptEntity, doc);
+			doc.setHoldingTrend(rptEntity.getHoldingTrend().toString());
+			String docId = rptEntity.getRuleType()+"_"+(rptEntity.getStockName()).replaceAll(" ", "_");
+			doc.set_id(docId);
+			rptDocs.add(doc);
+		});
+		
+		stockReportMongoRepo.saveAll(rptDocs);
 	}
 
 	private void updateTrendData(String currDate, List<MfRuleFundHolding> fundHoldingList,
@@ -251,8 +273,6 @@ public class MfRuleDataProcessService {
 		childArr.add(0);
 		childArr.add(0);
 		childArr.add(0);
-
-		reportEntity.setUpdatedDate(null);
 	}
 
 	public JsonNode getRestApiResponse(String url) throws Exception {
@@ -266,8 +286,9 @@ public class MfRuleDataProcessService {
 	}
 
 	@Transactional
+	@Scheduled(cron = "0 0 2,13 * * MON-SAT" , zone = "Asia/Kolkata") 
 	public String refreshRuleData() {
-		logger.info("refreshRuleData");
+		logger.info("refreshRuleData : "+LocalDateTime.now(ZoneId.of("GMT+05:30")));
 		List<MfRule> mfRuleList = mfRuleRepo.findByIsActive(MfRuleService.ACTIVE);
 		mfRuleList.forEach(mfRule -> {
 			try {
@@ -279,5 +300,10 @@ public class MfRuleDataProcessService {
 		
 
 		return "Success";
+	}
+	
+	public static void main(String arg[]) {
+		System.out.println("India time now "+LocalDateTime.now(ZoneId.of("GMT+05:30")));
+		System.out.println("India time now "+LocalDateTime.now(ZoneId.of("GMT+05:00")));
 	}
 }

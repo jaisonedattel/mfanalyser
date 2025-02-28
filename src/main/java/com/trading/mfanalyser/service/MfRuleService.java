@@ -28,6 +28,10 @@ public class MfRuleService {
 	Logger logger = LoggerFactory.getLogger(MfRuleService.class);
 	
 	public static final String ACTIVE = "Y";
+	public static final String EQUITY_LARGE_CAP = "EQUITY_LARGE_CAP";
+	public static final String EQUITY_MID_CAP = "EQUITY_MID_CAP";
+	public static final String EQUITY_SMALL_CAP = "EQUITY_SMALL_CAP";
+	
 	
 	@Autowired
 	MfRuleRepo mfRuleRepo;
