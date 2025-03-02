@@ -3,6 +3,7 @@ package com.trading.mfanalyser.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.beans.BeanUtils;
@@ -35,7 +36,7 @@ public class MfStockReportDto {
 	private String sector;
 
 	/*
-	 * data structure : [[DATE,FUND_COUNT, AVG_PER,MIN,MAX,0,0,0],[],[]]
+	 * data structure : [[DATE,FUND_COUNT, AVG_PER,RULE_AVG,RANK,0,0,0],[],[]]
 	 */
 	private ArrayNode holdingTrend;
 
@@ -55,6 +56,10 @@ public class MfStockReportDto {
 
 	private double week3;
 
+	private int ruleRank;
+	
+	private double ruleAvg;
+	
 	private LocalDate lastRunDate;
 	
 	private LocalDateTime createdDate;
@@ -196,6 +201,22 @@ public class MfStockReportDto {
 
 	public void setLastRunDate(LocalDate lastRunDate) {
 		this.lastRunDate = lastRunDate;
+	}
+
+	public int getRuleRank() {
+		return ruleRank;
+	}
+
+	public void setRuleRank(int ruleRank) {
+		this.ruleRank = ruleRank;
+	}
+
+	public double getRuleAvg() {
+		return ruleAvg;
+	}
+
+	public void setRuleAvg(double ruleAvg) {
+		this.ruleAvg = ruleAvg;
 	}
 
 }

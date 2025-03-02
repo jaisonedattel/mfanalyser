@@ -3,6 +3,7 @@ package com.trading.mfanalyser.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.beans.BeanUtils;
@@ -75,6 +76,14 @@ public class MfStockReportEntity {
 	@Column(name = "WEEK3")
 	private double week3;
 
+	@Column(name = "RULE_RANK")
+	@ColumnDefault("0")
+	private int ruleRank;
+	
+	@Column(name = "RULE_AVG")
+	@ColumnDefault("0")
+	private double ruleAvg;
+	
 	@Column(name = "LAST_RUN_DATE", columnDefinition = "DATE")
 	private LocalDate lastRunDate;
 	
@@ -227,6 +236,22 @@ public class MfStockReportEntity {
 
 	public void setRuleType(String ruleType) {
 		this.ruleType = ruleType;
+	}
+
+	public int getRuleRank() {
+		return ruleRank;
+	}
+
+	public void setRuleRank(int ruleRank) {
+		this.ruleRank = ruleRank;
+	}
+
+	public double getRuleAvg() {
+		return ruleAvg;
+	}
+
+	public void setRuleAvg(double ruleAvg) {
+		this.ruleAvg = ruleAvg;
 	}
 
 	public static void main(String arg[]) throws JsonMappingException, JsonProcessingException {

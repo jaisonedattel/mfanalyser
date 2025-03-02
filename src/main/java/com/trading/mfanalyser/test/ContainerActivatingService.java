@@ -16,8 +16,9 @@ public class ContainerActivatingService {
 	Logger logger = LoggerFactory.getLogger(ContainerActivatingService.class);
 
 	public static final String GO_REST_API = "https://gorest.co.in/public/v2/users";
+	public static final String RENDER_REST_API = "https://mfanalyser.onrender.com/test/hello";
 
-	@Scheduled(fixedRate = 720000, initialDelay = 60000) //every 12 minutes with initial 5 min delay
+	@Scheduled(fixedRate = 300000, initialDelay = 120000) //every 5 minutes with initial 1 min delay
 	public void refreshJobToKeepContainerActive() {
 		logger.info("refreshJobToKeepContainerActive : "+LocalDateTime.now(ZoneId.of("GMT+05:30")));
 		try {
@@ -29,10 +30,20 @@ public class ContainerActivatingService {
 	
 	public String getRestApiResponse(String url) throws Exception {
 		
-		WebClient client = WebClient.builder().baseUrl(url).defaultCookie("cookieKey", "cookieValue")
+		WebClient client = WebClient.builder().baseUrl(url)
 				.defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).build();
 		String jsonStr = client.get().retrieve().bodyToMono(String.class).block();
 		return jsonStr;
 
+	}
+	//https://mfanalyser.onrender.com/test/hello
+	//@Scheduled(fixedRate = 300000, initialDelay = 60000) //every 5 minutes with initial 1 min delay
+	public void callRenderApiToKeepContainerActive() {
+		logger.info("callRenderApiToKeepContainerActive : "+LocalDateTime.now(ZoneId.of("GMT+05:30")));
+		try {
+			System.out.println("Render API Resonse :"+getRestApiResponse(RENDER_REST_API));
+		} catch (Exception e) {
+			logger.error("Error processing the API call :"+RENDER_REST_API);
+		}
 	}
 }

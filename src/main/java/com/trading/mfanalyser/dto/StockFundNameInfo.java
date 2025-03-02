@@ -1,7 +1,5 @@
 package com.trading.mfanalyser.dto;
 
-import java.util.List;
-
 /**
  * https://www.baeldung.com/spring-data-jpa-projections
  */

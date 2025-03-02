@@ -2,6 +2,7 @@ package com.trading.mfanalyser.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 
 @Document("reportdata")
@@ -31,6 +33,9 @@ public class MfStockReportDocument {
 	private double week1;
 	private double week2;
 	private double week3;
+	private int ruleRank;
+	private double ruleAvg;
+	
 	private LocalDate lastRunDate;
 	private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
@@ -170,6 +175,40 @@ public class MfStockReportDocument {
 
 	public void setHoldingTrend(String holdingTrend) {
 		this.holdingTrend = holdingTrend;
+	}
+
+	
+	public int getRuleRank() {
+		return ruleRank;
+	}
+
+	public void setRuleRank(int ruleRank) {
+		this.ruleRank = ruleRank;
+	}
+
+	public double getRuleAvg() {
+		return ruleAvg;
+	}
+
+	public void setRuleAvg(double ruleAvg) {
+		this.ruleAvg = ruleAvg;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(_id);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		MfStockReportDocument other = (MfStockReportDocument) obj;
+		return Objects.equals(_id, other._id);
 	}
 
 	public static void main(String arg[]) throws JsonMappingException, JsonProcessingException {

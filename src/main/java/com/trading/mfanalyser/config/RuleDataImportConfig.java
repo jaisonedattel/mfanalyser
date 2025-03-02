@@ -90,6 +90,7 @@ public class RuleDataImportConfig implements ApplicationListener<ApplicationRead
 		logger.info("On Startup Loading Report data, if not exists");
 		long rptCount = mfRuleStockReportRepo.count();
 		if(rptCount > 0) {
+			logger.info("On Startup Loading Report data, Skipped");
 			return;
 		}
 		List<MfStockReportEntity> reportList = new ArrayList<MfStockReportEntity>();

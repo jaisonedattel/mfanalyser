@@ -4,10 +4,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -53,6 +56,9 @@ public class MfRuleDataProcessService {
 
 	public static final int MAX_FUND_COUNT = 10;
 	public static final int MAX_HOLDINGS_COUNT = 50;
+	public static final int MAX_TREND_DATA_COUNT = 50;
+
+	public static final int ARRAY_RANK_IDX = 4;
 
 	@Autowired
 	MfRuleRepo mfRuleRepo;
@@ -74,9 +80,10 @@ public class MfRuleDataProcessService {
 
 	@Autowired
 	MfRuleStockReportRepo mfRuleStockReportRepo;
-	
+
 	@Autowired
 	StockReportMongoRepo stockReportMongoRepo;
+
 	public void createMfRule() {
 		MfRule mfRule = new MfRule();
 		mfRule.setDescription("Top Large Cap fund in 5yr -- III");
@@ -135,7 +142,7 @@ public class MfRuleDataProcessService {
 		}
 
 		MfRule mfRuleS = mfRuleRepo.save(mfRule);
-		saveDataToHistoryTable(mfRuleS, isFundDataRefreshed);
+		//saveDataToHistoryTable(mfRuleS, isFundDataRefreshed);
 		refreshStockReportData(mfRuleS);
 		logger.info("loadMfRuleData : Rule Data refresh completed : " + mfRule.getRuleType());
 	}
@@ -202,23 +209,23 @@ public class MfRuleDataProcessService {
 			List<MfStockReportEntity> reportList = mfRuleStockReportRepo
 					.findByRuleTypeOrderByDay1Desc(mfRule.getRuleType());
 			Map<String, MfStockReportEntity> reportMap = reportList.stream()
-					.collect(Collectors.toMap(MfStockReportEntity::getIsinCode, Function.identity()));
+					.collect(Collectors.toMap(MfStockReportEntity::getStockName, Function.identity()));
 
 			Map<String, List<MfRuleFundHolding>> holdingMap = mfRule.getMfRuleFund().stream()
 					.flatMap(fund -> fund.getMfRuleFundHolding().stream()).collect(Collectors.groupingBy(
-							MfRuleFundHolding::getIsinCode, HashMap::new, Collectors.toCollection(ArrayList::new)));
+							MfRuleFundHolding::getStockName, HashMap::new, Collectors.toCollection(ArrayList::new)));
 
-			holdingMap.forEach((isinCodeKey, fundHoldingList) -> {
+			holdingMap.forEach((stockNameKey, fundHoldingList) -> {
 				int holdingCount = fundHoldingList.size();
 				if (holdingCount > 1) {
 
-					MfStockReportEntity reportEntity = reportMap.get(isinCodeKey);
+					MfStockReportEntity reportEntity = reportMap.get(stockNameKey);
 					if (reportEntity == null) {
 						reportEntity = new MfStockReportEntity(fundHoldingList.get(0));
 						reportEntity.setRuleType(mfRule.getRuleType());
 						//
 						reportEntity.setHoldingTrend(mapper.createArrayNode());
-						reportMap.put(isinCodeKey, reportEntity);
+						reportMap.put(stockNameKey, reportEntity);
 					}
 					updateTrendData(currDateStr, fundHoldingList, reportEntity);
 					/**
@@ -228,47 +235,89 @@ public class MfRuleDataProcessService {
 				}
 
 			});
-			mfRuleStockReportRepo.saveAll(reportMap.values());
-			backUpDataToMongoDb(mfRule.getRuleType(), reportMap);
+			List<MfStockReportEntity> stockList = new ArrayList<MfStockReportEntity>(reportMap.values());
+			setStockHoldingRank(stockList);
+			mfRuleStockReportRepo.saveAll(stockList);
+			backUpDataToMongoDb(mfRule.getRuleType(), stockList);
 		}
 	}
 
-	private void backUpDataToMongoDb(String ruleType, Map<String, MfStockReportEntity> reportMap) {
-		
-		List<MfStockReportDocument> rptDocs = new ArrayList<MfStockReportDocument>();
-		reportMap.values().forEach(rptEntity ->{
-			MfStockReportDocument doc = new MfStockReportDocument();
+	private void setStockHoldingRank(List<MfStockReportEntity> stockList) {
+
+		Comparator<MfStockReportEntity> myComparator = new StockRankingComparator();
+		Collections.sort(stockList, myComparator);
+		int rank = 0;
+		for (MfStockReportEntity stock : stockList) {
+			rank++;
+			stock.setRuleRank(rank);
+			ArrayNode trendData = stock.getHoldingTrend();
+			ArrayNode latestNode = (ArrayNode) trendData.get(trendData.size() - 1);
+			latestNode.set(ARRAY_RANK_IDX, rank);
+		}
+	}
+
+	private void backUpDataToMongoDb(String ruleType, List<MfStockReportEntity> stockList) {
+
+		List<MfStockReportDocument> rptDocList = stockReportMongoRepo.findAll();
+		Map<String, MfStockReportDocument> rptDocMap = rptDocList.stream()
+				.collect(Collectors.toMap(MfStockReportDocument::get_id, Function.identity()));
+
+		stockList.forEach(rptEntity -> {
+			String docId = rptEntity.getRuleType() + "_" + (rptEntity.getStockName()).replaceAll(" ", "_");
+			MfStockReportDocument doc = rptDocMap.get(docId);
+			if (doc == null) {
+				doc = new MfStockReportDocument();
+				doc.set_id(docId);
+				rptDocList.add(doc);
+			}
 			BeanUtils.copyProperties(rptEntity, doc);
 			doc.setHoldingTrend(rptEntity.getHoldingTrend().toString());
-			String docId = rptEntity.getRuleType()+"_"+(rptEntity.getStockName()).replaceAll(" ", "_");
-			doc.set_id(docId);
-			rptDocs.add(doc);
 		});
-		
-		stockReportMongoRepo.saveAll(rptDocs);
+
+		stockReportMongoRepo.saveAll(rptDocList);
 	}
 
 	private void updateTrendData(String currDate, List<MfRuleFundHolding> fundHoldingList,
 			MfStockReportEntity reportEntity) {
 
+		ArrayNode trendData = reportEntity.getHoldingTrend();
+		if (trendData == null) {
+			return;
+		}
+		if (trendData.size() >= 1) { //For Newly added stock, trend data will be empty
+			ArrayNode latestNode = (ArrayNode) trendData.get(trendData.size() - 1);
+			/* If date exists return */
+			if (latestNode.get(0).asText().equals(currDate)) {
+				return;
+			}
+		}
+		/* Remove if trend data count exceed max count */
+		while (trendData.size() > MAX_TREND_DATA_COUNT) {
+			trendData.remove(0);
+		}
+		
 		Supplier<DoubleStream> weightageStrm = () -> fundHoldingList.stream()
 				.mapToDouble(MfRuleFundHolding::getHoldingPercentage);
 		double avg = Math.floor(weightageStrm.get().average().orElse(Double.NaN) * 100) / 100;
-		double min = Math.floor(weightageStrm.get().min().orElse(Double.NaN) * 100) / 100;
+		double sum = Math.floor(weightageStrm.get().sum() * 100) / 100;
 		double max = Math.floor(weightageStrm.get().max().orElse(Double.NaN) * 100) / 100;
 		reportEntity.setDay5(reportEntity.getDay4());
 		reportEntity.setDay4(reportEntity.getDay3());
 		reportEntity.setDay3(reportEntity.getDay2());
 		reportEntity.setDay2(reportEntity.getDay1());
 		reportEntity.setDay1(avg);
+		double ruleWiseAvg = sum / MAX_FUND_COUNT;
+		reportEntity.setRuleAvg(ruleWiseAvg);
 
-		ArrayNode trendData = reportEntity.getHoldingTrend();
+		Set<String> fundSet = new HashSet<>();
+		fundHoldingList.stream().filter(p -> fundSet.add(p.getMfRuleFund().getFundName())).collect(Collectors.toList());
+
 		ArrayNode childArr = trendData.addArray();
 		childArr.add(currDate);
-		childArr.add(fundHoldingList.size());
+		childArr.add(fundSet.size());
 		childArr.add(avg);
-		childArr.add(min);
-		childArr.add(max);
+		childArr.add(ruleWiseAvg);
+		childArr.add(0); // placeholder for Stock Rank..................ARRAY_RANK_IDX - 4
 		// empty record for future use
 		childArr.add(0);
 		childArr.add(0);
@@ -286,24 +335,52 @@ public class MfRuleDataProcessService {
 	}
 
 	@Transactional
-	@Scheduled(cron = "0 0 2,13 * * MON-SAT" , zone = "Asia/Kolkata") 
+	@Scheduled(cron = "0 0 2,13 * * MON-SAT", zone = "Asia/Kolkata")
 	public String refreshRuleData() {
-		logger.info("refreshRuleData : "+LocalDateTime.now(ZoneId.of("GMT+05:30")));
+		logger.info("refreshRuleData : " + LocalDateTime.now(ZoneId.of("GMT+05:30")));
 		List<MfRule> mfRuleList = mfRuleRepo.findByIsActive(MfRuleService.ACTIVE);
 		mfRuleList.forEach(mfRule -> {
 			try {
 				loadMfRuleData(mfRule);
 			} catch (Exception e) {
-				logger.error("Error in data refresh : ",e);
+				logger.error("Error in data refresh : ", e);
 			}
 		});
-		
 
 		return "Success";
 	}
-	
+
 	public static void main(String arg[]) {
-		System.out.println("India time now "+LocalDateTime.now(ZoneId.of("GMT+05:30")));
-		System.out.println("India time now "+LocalDateTime.now(ZoneId.of("GMT+05:00")));
+		ObjectMapper objM = new ObjectMapper();
+		ArrayNode parentNode = objM.createArrayNode();
+		parentNode.addArray().add(1);
+		parentNode.addArray().add(2);
+		;
+		parentNode.addArray().add(3);
+		;
+		parentNode.addArray().add(4);
+		;
+		parentNode.addArray().add(5);
+		;
+		parentNode.addArray().add(6);
+		;
+		parentNode.addArray().add(7);
+		;
+		parentNode.addArray().add(8);
+		;
+		parentNode.addArray().add(9);
+		;
+		parentNode.addArray().add(10);
+		;
+		System.out.println("Parent Node size :" + parentNode);
+
+		while (parentNode != null && parentNode.size() > 5) {
+			parentNode.remove(0);
+		}
+		parentNode.addArray().add(11);
+		System.out.println("Parent Node size :" + parentNode);
+
+		System.out.println("India time now " + LocalDateTime.now(ZoneId.of("GMT+05:30")));
+		System.out.println("India time now " + LocalDateTime.now(ZoneId.of("GMT+05:00")));
 	}
 }
